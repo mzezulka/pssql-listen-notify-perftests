@@ -11,6 +11,12 @@ public class ListenNotifyClientFactory {
     private static final String clientPropName = "cz.fi.muni.pa036.client";
     private static final String clientProp = System.getProperty(clientPropName);
     
+    static {
+        if(clientProp == null) {
+            throw new IllegalArgumentException(String.format("You have not specified system property '%s'. Please fix.", clientPropName));
+        }
+    }
+    
     public static ListenNotifyClient client() {
         switch(clientProp) {
             case "nonblocking" : 
