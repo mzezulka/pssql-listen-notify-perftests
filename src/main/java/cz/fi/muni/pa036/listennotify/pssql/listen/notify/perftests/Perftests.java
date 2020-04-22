@@ -42,7 +42,6 @@ public class Perftests {
     @Benchmark
     public boolean insertBasicImple(Blackhole bh)  {
         try {
-            client.registerEventListener(EventType.INSERT);
             client.executeStatement("insert into dm_queue values (6,6,'here');");
             bh.consume(client.next());
             return true;
