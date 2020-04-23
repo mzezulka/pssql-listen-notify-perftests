@@ -28,11 +28,18 @@ Once in the container's terminal, execute:
 In the SQL shell, execute:
  
 ```sql
-CREATE TABLE dm_queue
+CREATE TABLE text
 (
-id integer,
-domainid integer,
-command character varying(1024)
+id integer NOT NULL,
+message character varying(1024),
+CONSTRAINT id_primary PRIMARY KEY (id)
+);
+
+CREATE TABLE binary
+(
+    id integer NOT NULL,
+    img bytea NOT NULL,
+    CONSTRAINT binary_pkey PRIMARY KEY (id)
 );
 
 CREATE OR REPLACE FUNCTION queue_event() RETURNS TRIGGER AS $$
@@ -68,7 +75,7 @@ END;
 $$ LANGUAGE plpgsql;
 	
 CREATE TRIGGER queue_notify_event
-AFTER INSERT ON dm_queue
+AFTER INSERT ON text
 FOR EACH ROW EXECUTE PROCEDURE queue_event();
 ```
 #### 4. Run Performance Tests 
