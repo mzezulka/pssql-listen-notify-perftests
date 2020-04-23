@@ -35,7 +35,7 @@ message character varying(1024),
 CONSTRAINT id_primary PRIMARY KEY (id)
 );
 
-CREATE TABLE binary
+CREATE TABLE bin
 (
     id integer NOT NULL,
     img bytea NOT NULL,
