@@ -1,4 +1,6 @@
-0. Make sure you have both PSSQL Java clients ([blocking](https://github.com/zezulka/pssql-listen-notify-client-blocking),[nonblocking](https://not.available.yet)) installed locally.
+#### 0. Prerequisites
+
+Make sure you have both PSSQL Java clients ([blocking](https://github.com/zezulka/pssql-listen-notify-client-blocking),[nonblocking](https://not.available.yet)) installed locally in your Maven repository.
 
 #### 1. Perftest JAR Build: 
 
@@ -23,7 +25,7 @@ Once in the container's terminal, execute:
 
 `psql -U postgres`
  
- Once in a SQL shell, execute:
+In the SQL shell, execute:
  
 ```sql
 CREATE TABLE dm_queue
