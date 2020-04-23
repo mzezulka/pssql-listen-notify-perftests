@@ -22,6 +22,9 @@
 Once in the container's terminal, execute:
 
 `psql -U postgres`
+ 
+ Once in a SQL shell, execute:
+ 
 ```sql
 CREATE TABLE dm_queue
 (
