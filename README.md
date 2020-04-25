@@ -31,7 +31,7 @@ In the SQL shell, execute:
 CREATE TABLE text
 (
 id integer NOT NULL,
-message character varying(1024),
+message character varying(524288),
 CONSTRAINT id_primary PRIMARY KEY (id)
 );
 
