@@ -30,16 +30,20 @@ In the SQL shell, execute:
 ```sql
 CREATE TABLE text
 (
-id integer NOT NULL,
-message character varying(524288),
-CONSTRAINT id_primary PRIMARY KEY (id)
+    id integer NOT NULL,
+    message character varying(524288),
+    CONSTRAINT id_primary PRIMARY KEY (id)
 );
 
 CREATE TABLE bin
 (
     id integer NOT NULL,
     img bytea NOT NULL,
-    CONSTRAINT binary_pkey PRIMARY KEY (id)
+    CONSTRAINT binary_pkey PRIMARY KEY (id),
+    CONSTRAINT text_id FOREIGN KEY (id)
+    REFERENCES text (id) MATCH SIMPLE
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
 
 CREATE OR REPLACE FUNCTION queue_event() RETURNS TRIGGER AS $$
