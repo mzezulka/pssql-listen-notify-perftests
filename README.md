@@ -1,16 +1,45 @@
-0. Make sure you have both PSSQL clients installed locally.
-1. install this project: mvn clean install (this will produce a benchmark JAR file at path "target/benchmarks.jar".)
-1a. (do this only when setting up the database for the first time)
-sudo docker ps (lists all containers, pick the id of the container with name "postresql")
-sudo docker exec -it <postgresql_id> bash
-(once in the container's terminal, execute)
-psql -U postgres
+#### 0. Prerequisites
 
-CREATE TABLE dm_queue
+Make sure you have both PSSQL Java clients ([blocking](https://github.com/zezulka/pssql-listen-notify-client-blocking),[nonblocking](https://not.available.yet)) installed locally in your Maven repository.
+
+#### 1. Perftest JAR Build: 
+
+`git clone https://github.com/mzezulka/pssql-listen-notify-perftests`
+
+`cd https://github.com/mzezulka/pssql-listen-notify-perftests`
+
+`mvn clean install` (this will produce a benchmark JAR file at path "target/benchmarks.jar")
+
+#### 2. Database Start
+
+`sudo systemctl start docker && sudo docker run -d --rm --name postgresql -v postgresql-data:/var/lib/postgresql/data --network host -e POSTGRES_PASSWORD="" -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 postgres:latest`
+
+#### 3. Database Setup
+
+*Skip this once you've already set up the database.*
+
+`sudo docker ps` (lists all containers, pick the id of the container with name "postresql")`
+`sudo docker exec -it <postgresql_id> bash`
+
+Once in the container's terminal, execute:
+
+`psql -U postgres`
+ 
+In the SQL shell, execute:
+ 
+```sql
+CREATE TABLE text
 (
-id integer,
-domainid integer,
-command character varying(1024)
+id integer NOT NULL,
+message character varying(1024),
+CONSTRAINT id_primary PRIMARY KEY (id)
+);
+
+CREATE TABLE bin
+(
+    id integer NOT NULL,
+    img bytea NOT NULL,
+    CONSTRAINT binary_pkey PRIMARY KEY (id)
 );
 
 CREATE OR REPLACE FUNCTION queue_event() RETURNS TRIGGER AS $$
@@ -46,8 +75,9 @@ END;
 $$ LANGUAGE plpgsql;
 	
 CREATE TRIGGER queue_notify_event
-AFTER INSERT ON dm_queue
+AFTER INSERT ON text
 FOR EACH ROW EXECUTE PROCEDURE queue_event();
+```
+#### 4. Run Performance Tests 
 
-2. Make sure you've got the pssql container running: sudo systemctl start docker && sudo docker run -d --rm --name postgresql -v postgresql-data:/var/lib/postgresql/data --network host -e POSTGRES_PASSWORD="" -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 postgres:latest
-3. java -jar -Dcz.fi.muni.pa036.client=<CLIENT> target/benchmarks.jar
+`java -jar -Dcz.fi.muni.pa036.client=<CLIENT> target/benchmarks.jar` (CLIENT = [blocking|nonblocking])
