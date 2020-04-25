@@ -9,11 +9,13 @@ import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Scanner;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.infra.Blackhole;
 
 /**
@@ -47,7 +49,9 @@ public class Perftests {
         }
     }
 
+    // This benchmark does not use prepared statement, always a fresh one
     @Benchmark
+    @BenchmarkMode({Mode.AverageTime})
     public boolean insertNaive(Blackhole bh) {
         try {
             client.executeStatement(String.format(INSERT_TEXT_MESSAGE, id++, DEFAULT_MESSAGE));
@@ -59,6 +63,7 @@ public class Perftests {
     }
 
     @Benchmark
+    @BenchmarkMode({Mode.AverageTime})
     public boolean insertBasic(Blackhole bh) {
         try {
             client.insertText(id++, DEFAULT_MESSAGE);
@@ -69,7 +74,7 @@ public class Perftests {
         }
     }
     
-    // Perftests measuring throughput with different message lengths
+    // Perftests scenarios dealing with different message lengths
     
     @State(Scope.Benchmark)
     public static class HundredCharsState {
@@ -86,6 +91,7 @@ public class Perftests {
     }
     
     @Benchmark
+    @BenchmarkMode({Mode.AverageTime})
     public boolean insertHundredsOfChars(Blackhole bh, HundredCharsState hcs) {
         try {
             client.insertText(id++, hcs.fileContents);
@@ -111,6 +117,7 @@ public class Perftests {
     }
     
     @Benchmark
+    @BenchmarkMode({Mode.AverageTime})
     public boolean insertHundredsOfThousandsOfChars(Blackhole bh, HundredsOfThousandsCharsState hcs) {
         try {
             client.insertText(id++, hcs.fileContents);
@@ -137,9 +144,35 @@ public class Perftests {
     }
     
     @Benchmark
-    public boolean insertImage(Blackhole bh, ImageState is) {
+    @BenchmarkMode({Mode.AverageTime})
+    public boolean insertTextAndImage(Blackhole bh, ImageState is) {
         try {
-            client.insertBinary(id++, is.fis);
+            // we need to insert text as well since the bin table
+            // contains a foreign key (used in later scenarios)
+            client.insertText(id++, DEFAULT_MESSAGE);
+            bh.consume(client.next());
+            client.insertBinary(id, is.fis);
+            bh.consume(client.next());
+            return true;
+        } catch(SQLException sqle) {
+            throw new RuntimeException(sqle);
+        }
+    }
+    
+    // Let's measure overhead caused by accepting data from two different channels
+    // (FK constraint in bin has got CASCADE both on UPDATE and DELETE!)
+    
+    @Benchmark
+    @BenchmarkMode({Mode.AverageTime})
+    public boolean insertTextAndImageAndDelete(Blackhole bh, ImageState is) {
+        try {
+            client.insertText(id++, DEFAULT_MESSAGE);
+            bh.consume(client.next());
+            client.insertBinary(id, is.fis);
+            bh.consume(client.next());
+            client.deleteText(id);
+            // note that we expect two messages to be reported, one for each table
+            bh.consume(client.next());
             bh.consume(client.next());
             return true;
         } catch(SQLException sqle) {
