@@ -78,9 +78,66 @@ END;
  
 $$ LANGUAGE plpgsql;
 	
-CREATE TRIGGER queue_notify_event
+CREATE TRIGGER check_insert_text
 AFTER INSERT ON text
 FOR EACH ROW EXECUTE PROCEDURE queue_event();
+
+-- Let us do the same thing for the bin table
+CREATE OR REPLACE FUNCTION queue_event_bin() RETURNS TRIGGER AS $$
+ 
+DECLARE
+data json;
+notification json;
+ 
+BEGIN
+ 
+-- Convert the old or new row to JSON, based on the kind of action.
+-- Action = DELETE? -&gt; OLD row
+-- Action = INSERT or UPDATE? -&gt; NEW row
+IF (TG_OP = 'DELETE') THEN
+data = row_to_json(OLD);
+ELSE
+data = row_to_json(NEW);
+END IF;
+ 
+-- Contruct the notification as a JSON string.
+notification = json_build_object(
+'table',TG_TABLE_NAME,
+'action', TG_OP,
+'data', data);
+ 
+-- Execute pg_notify(channel, notification)
+PERFORM pg_notify('q_event_bin',notification::text);
+ 
+-- Result is ignored since this is an AFTER trigger
+RETURN NULL;
+END;
+ 
+$$ LANGUAGE plpgsql;
+CREATE FUNCTION
+
+CREATE TRIGGER check_insert_bin
+AFTER INSERT ON bin
+FOR EACH ROW EXECUTE PROCEDURE queue_event_bin();
+
+-- Last but not least, let's create UPDATE and DELETE triggers
+CREATE TRIGGER check_update_text
+    AFTER UPDATE ON text
+    FOR EACH ROW
+    EXECUTE PROCEDURE queue_event();
+
+CREATE TRIGGER check_update_bin
+    AFTER UPDATE ON bin
+    FOR EACH ROW
+    EXECUTE PROCEDURE queue_event_bin();
+
+CREATE TRIGGER check_delete_text
+    AFTER DELETE ON text
+    EXECUTE PROCEDURE queue_event();
+
+CREATE TRIGGER check_delete_bin
+    AFTER UPDATE ON bin
+    EXECUTE PROCEDURE queue_event_bin();
 ```
 #### 4. Run Performance Tests 
 
