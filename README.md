@@ -31,14 +31,14 @@ In the SQL shell, execute:
 CREATE TABLE text
 (
     id integer NOT NULL,
-    message character varying(524288),
+    value character varying(524288),
     CONSTRAINT id_primary PRIMARY KEY (id)
 );
 
 CREATE TABLE bin
 (
     id integer NOT NULL,
-    img bytea NOT NULL,
+    value bytea NOT NULL,
     CONSTRAINT binary_pkey PRIMARY KEY (id),
     CONSTRAINT text_id FOREIGN KEY (id)
     REFERENCES text (id) MATCH SIMPLE
