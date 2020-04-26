@@ -29,7 +29,7 @@ public class Perftests {
     private int id = 1;
     private static final String DEFAULT_MESSAGE = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
     private static final String INSERT_TEXT_MESSAGE = "INSERT INTO text VALUES (%d, '%s');";
-    private static final String INSERT_BINARY_MESSAGE = "INSERT INTO bin VALUES (%d, '%s');";
+    private static final String UPDATE_TEXT = "UPDATE text SET message='changed';";
 
     @Setup(Level.Iteration)
     public void setup() throws SQLException {
@@ -159,7 +159,7 @@ public class Perftests {
         }
     }
     
-    // Let's measure overhead caused by accepting data from two different channels
+    // This scenario measures overhead caused by accepting data from two different channels
     // (FK constraint in bin has got CASCADE both on UPDATE and DELETE!)
     
     @Benchmark
@@ -174,6 +174,40 @@ public class Perftests {
             // note that we expect two messages to be reported, one for each table
             bh.consume(client.next());
             bh.consume(client.next());
+            return true;
+        } catch(SQLException sqle) {
+            throw new RuntimeException(sqle);
+        }
+    }
+    
+    @State(Scope.Benchmark)
+    public static class NotifyScatterUpdateState {
+        private int noIterations = 1000;
+        private ListenNotifyClient c = ListenNotifyClientFactory.client();
+        
+        @Setup(Level.Iteration)
+        public void setup() {
+            for(int i = 0; i < noIterations; i++) {
+                try {
+                    c.insertText(i++, DEFAULT_MESSAGE);
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }
+    }
+    
+    // We first insert a certain amount of rows into the table (in the prepare phase
+    // of the benchmark) and then execute a statement which affects all such rows
+    
+    @Benchmark
+    @BenchmarkMode({Mode.SingleShotTime})
+    public boolean oneSqlStatementMultipleNotify(Blackhole bh, NotifyScatterUpdateState nsus) {
+        try {
+            client.executeStatement(UPDATE_TEXT);
+            for(int i = 0; i < nsus.noIterations; i++) {
+                bh.consume(client.next());    
+            }
             return true;
         } catch(SQLException sqle) {
             throw new RuntimeException(sqle);
