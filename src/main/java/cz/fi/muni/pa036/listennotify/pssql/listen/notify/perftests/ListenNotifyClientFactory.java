@@ -1,7 +1,7 @@
 package cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests;
 
+import cz.fi.muni.pa036.listennotify.api.AbstractListenNotifyClient;
 import cz.fi.muni.pa036.listennotify.client.blocking.ListenNotifyClientBlocking;
-import cz.fi.muni.pa036.listennotify.api.ListenNotifyClient;
 
 /**
  * @author Miloslav Zezulka
@@ -17,7 +17,7 @@ public class ListenNotifyClientFactory {
         }
     }
     
-    public static ListenNotifyClient client() {
+    public static AbstractListenNotifyClient client() {
         switch(CLIENT_PROP) {
             case "nonblocking" : 
             case "blocking" : return new ListenNotifyClientBlocking();

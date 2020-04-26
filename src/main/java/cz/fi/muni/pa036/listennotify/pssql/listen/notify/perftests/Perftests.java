@@ -1,7 +1,7 @@
 package cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests;
 
+import cz.fi.muni.pa036.listennotify.api.AbstractListenNotifyClient;
 import cz.fi.muni.pa036.listennotify.api.CrudClient;
-import cz.fi.muni.pa036.listennotify.api.ListenNotifyClient;
 import cz.fi.muni.pa036.listennotify.api.event.EventType;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,6 +9,8 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -27,14 +29,20 @@ import org.openjdk.jmh.infra.Blackhole;
 @State(Scope.Thread)
 public class Perftests {
 
-    private CrudClient crudClient = CrudClientFactory.client();
-    private ListenNotifyClient listenNotifyClient = ListenNotifyClientFactory.client();
+    private final CrudClient crudClient = CrudClientFactory.client();
+    private final AbstractListenNotifyClient listenNotifyClient = ListenNotifyClientFactory.client();
+    private final ExecutorService es = Executors.newSingleThreadExecutor();
     
     private int id = 1;
     private static final String DEFAULT_MESSAGE = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
     private static final String INSERT_TEXT_MESSAGE = "INSERT INTO text VALUES (%d, '%s');";
     private static final String UPDATE_TEXT = "UPDATE text SET message='changed';";
 
+    @Setup(Level.Trial)
+    public void benchmarkSetup() {
+        es.submit(listenNotifyClient);
+    }
+    
     @Setup(Level.Iteration)
     public void setup() throws SQLException {
         // clean all data
