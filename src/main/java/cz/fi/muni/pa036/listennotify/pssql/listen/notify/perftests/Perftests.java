@@ -1,8 +1,8 @@
 package cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests;
 
 import cz.fi.muni.pa036.listennotify.api.CrudClient;
-import cz.fi.muni.pa036.listennotify.api.EventType;
 import cz.fi.muni.pa036.listennotify.api.ListenNotifyClient;
+import cz.fi.muni.pa036.listennotify.api.event.EventType;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -59,7 +59,7 @@ public class Perftests {
     public boolean insertNaive(Blackhole bh) {
         try {
             crudClient.executeStatement(String.format(INSERT_TEXT_MESSAGE, id++, DEFAULT_MESSAGE));
-            bh.consume(listenNotifyClient.next());
+            bh.consume(listenNotifyClient.nextText());
             return true;
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
@@ -71,7 +71,7 @@ public class Perftests {
     public boolean insertBasic(Blackhole bh) {
         try {
             crudClient.insertText(id++, DEFAULT_MESSAGE);
-            bh.consume(listenNotifyClient.next());
+            bh.consume(listenNotifyClient.nextText());
             return true;
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
@@ -99,7 +99,7 @@ public class Perftests {
     public boolean insertHundredsOfChars(Blackhole bh, HundredCharsState hcs) {
         try {
             crudClient.insertText(id++, hcs.fileContents);
-            bh.consume(listenNotifyClient.next());
+            bh.consume(listenNotifyClient.nextText());
             return true;
         } catch(SQLException sqle) {
             throw new RuntimeException(sqle);
@@ -125,7 +125,7 @@ public class Perftests {
     public boolean insertHundredsOfThousandsOfChars(Blackhole bh, HundredsOfThousandsCharsState hcs) {
         try {
             crudClient.insertText(id++, hcs.fileContents);
-            bh.consume(listenNotifyClient.next());
+            bh.consume(listenNotifyClient.nextText());
             return true;
         } catch(SQLException sqle) {
             throw new RuntimeException(sqle);
@@ -154,9 +154,9 @@ public class Perftests {
             // we need to insert text as well since the bin table
             // contains a foreign key (used in later scenarios)
             crudClient.insertText(id++, DEFAULT_MESSAGE);
-            bh.consume(listenNotifyClient.next());
+            bh.consume(listenNotifyClient.nextText());
             crudClient.insertBinary(id, is.fis);
-            bh.consume(listenNotifyClient.next());
+            bh.consume(listenNotifyClient.nextText());
             return true;
         } catch(SQLException sqle) {
             throw new RuntimeException(sqle);
@@ -171,13 +171,13 @@ public class Perftests {
     public boolean insertTextAndImageAndDelete(Blackhole bh, ImageState is) {
         try {
             crudClient.insertText(id++, DEFAULT_MESSAGE);
-            bh.consume(listenNotifyClient.next());
+            bh.consume(listenNotifyClient.nextText());
             crudClient.insertBinary(id, is.fis);
-            bh.consume(listenNotifyClient.next());
+            bh.consume(listenNotifyClient.nextBinary());
             crudClient.deleteText(id);
             // note that we expect two messages to be reported, one for each table
-            bh.consume(listenNotifyClient.next());
-            bh.consume(listenNotifyClient.next());
+            bh.consume(listenNotifyClient.nextText());
+            bh.consume(listenNotifyClient.nextBinary());
             return true;
         } catch(SQLException sqle) {
             throw new RuntimeException(sqle);
@@ -213,9 +213,7 @@ public class Perftests {
     public boolean oneSqlStatementMultipleNotify(Blackhole bh, NotifyScatterUpdateState nsus) {
         try {
             crudClient.executeStatement(UPDATE_TEXT);
-            for(int i = 0; i < nsus.noIterations; i++) {
-                bh.consume(listenNotifyClient.next());    
-            }
+            bh.consume(listenNotifyClient.nextText(nsus.noIterations));
             return true;
         } catch(SQLException sqle) {
             throw new RuntimeException(sqle);
