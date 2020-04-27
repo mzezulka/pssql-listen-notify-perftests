@@ -32,7 +32,7 @@ public class Perftests {
     private final CrudClient crudClient = CrudClientFactory.client();
     private final AbstractListenNotifyClient listenNotifyClient = ListenNotifyClientFactory.client();
     private final ExecutorService es = Executors.newSingleThreadExecutor();
-    
+
     private int id = 1;
     private static final String DEFAULT_MESSAGE = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
     private static final String INSERT_TEXT_MESSAGE = "INSERT INTO text VALUES (%d, '%s');";
@@ -40,7 +40,20 @@ public class Perftests {
 
     @Setup(Level.Trial)
     public void benchmarkSetup() {
-        es.submit(listenNotifyClient);
+        for (EventType e : EventType.values()) {
+            crudClient.registerEventListener(e);
+        }
+        listenNotifyClient.setCrudClient(crudClient);
+        es.execute(listenNotifyClient);
+    }
+
+    @TearDown(Level.Trial)
+    public void perIterationSetup() {
+        for (EventType e : EventType.values()) {
+            crudClient.deregisterEventListener(e);
+        }
+        listenNotifyClient.shutdown();
+        es.shutdownNow();
     }
     
     @Setup(Level.Iteration)
@@ -49,18 +62,7 @@ public class Perftests {
         crudClient.executeStatement("DELETE FROM bin;");
         crudClient.executeStatement("DELETE FROM text;");
         id = 1;
-        for (EventType e : EventType.values()) {
-            crudClient.registerEventListener(e);
-        }
     }
-
-    @TearDown
-    public void cleanup() {
-        for (EventType e : EventType.values()) {
-            crudClient.deregisterEventListener(e);
-        }
-    }
-
     // This benchmark does not use prepared statement, always a fresh one
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
@@ -85,23 +87,26 @@ public class Perftests {
             throw new RuntimeException(ex);
         }
     }
-    
+
     // Perftests scenarios dealing with different message lengths
-    
     @State(Scope.Benchmark)
     public static class HundredCharsState {
+
         String fileContents = null;
-        
+
         @Setup
         public void setup() {
-            if(fileContents != null) return;
-            InputStream is = getClass().getClassLoader().getResourceAsStream("/five_hundred.txt");
+            if (fileContents != null) {
+                return;
+            }
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            InputStream is = classLoader.getResourceAsStream("five_hundred.txt");
             Scanner s = new Scanner(is).useDelimiter("\\A");
             fileContents = s.hasNext() ? s.next() : "";
-            assert(fileContents.length() == 500);
+            assert (fileContents.length() == 500);
         }
     }
-    
+
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
     public boolean insertHundredsOfChars(Blackhole bh, HundredCharsState hcs) {
@@ -109,25 +114,29 @@ public class Perftests {
             crudClient.insertText(id++, hcs.fileContents);
             bh.consume(listenNotifyClient.nextText());
             return true;
-        } catch(SQLException sqle) {
+        } catch (SQLException sqle) {
             throw new RuntimeException(sqle);
         }
     }
-    
+
     @State(Scope.Benchmark)
     public static class HundredsOfThousandsCharsState {
+
         String fileContents = null;
-        
+
         @Setup
         public void setup() {
-            if(fileContents != null) return;
-            InputStream is = getClass().getClassLoader().getResourceAsStream("/three_hundred_thousand.txt");
+            if (fileContents != null) {
+                return;
+            }
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            InputStream is = classLoader.getResourceAsStream("three_hundred_thousand.txt");
             Scanner s = new Scanner(is).useDelimiter("\\A");
             fileContents = s.hasNext() ? s.next() : "";
-            assert(fileContents.length() == 300_000);
+            assert (fileContents.length() == 300_000);
         }
     }
-    
+
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
     public boolean insertHundredsOfThousandsOfChars(Blackhole bh, HundredsOfThousandsCharsState hcs) {
@@ -135,18 +144,21 @@ public class Perftests {
             crudClient.insertText(id++, hcs.fileContents);
             bh.consume(listenNotifyClient.nextText());
             return true;
-        } catch(SQLException sqle) {
+        } catch (SQLException sqle) {
             throw new RuntimeException(sqle);
         }
     }
-    
+
     @State(Scope.Benchmark)
     public static class ImageState {
+
         FileInputStream fis = null;
-        
+
         @Setup
         public void setup() {
-            if(fis != null) return;
+            if (fis != null) {
+                return;
+            }
             try {
                 fis = new FileInputStream(new File("src/main/resources/postgresql-logo.png"));
             } catch (FileNotFoundException ex) {
@@ -154,7 +166,7 @@ public class Perftests {
             }
         }
     }
-    
+
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
     public boolean insertTextAndImage(Blackhole bh, ImageState is) {
@@ -166,14 +178,13 @@ public class Perftests {
             crudClient.insertBinary(id, is.fis);
             bh.consume(listenNotifyClient.nextText());
             return true;
-        } catch(SQLException sqle) {
+        } catch (SQLException sqle) {
             throw new RuntimeException(sqle);
         }
     }
-    
+
     // This scenario measures overhead caused by accepting data from two different channels
     // (FK constraint in bin has got CASCADE both on UPDATE and DELETE!)
-    
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
     public boolean insertTextAndImageAndDelete(Blackhole bh, ImageState is) {
@@ -187,23 +198,24 @@ public class Perftests {
             bh.consume(listenNotifyClient.nextText());
             bh.consume(listenNotifyClient.nextBinary());
             return true;
-        } catch(SQLException sqle) {
+        } catch (SQLException sqle) {
             throw new RuntimeException(sqle);
         }
     }
-    
+
     @State(Scope.Benchmark)
     public static class NotifyScatterUpdateState {
+
         @Param({"10", "1000"})
         private int noIterations;
         // we need to make a fresh copy of the client because crudClient variable
         // is static and cannot be accessed from a non-static context
         private final CrudClient c = CrudClientFactory.client();
-        
+
         @Setup(Level.Iteration)
         public void setup() {
             c.registerEventListener(EventType.UPDATE_TEXT);
-            for(int i = 0; i < noIterations; i++) {
+            for (int i = 0; i < noIterations; i++) {
                 try {
                     c.insertText(i++, DEFAULT_MESSAGE);
                 } catch (SQLException ex) {
@@ -212,10 +224,9 @@ public class Perftests {
             }
         }
     }
-    
+
     // We first insert a certain amount of rows into the table (in the prepare phase
     // of the benchmark) and then execute a statement which affects all such rows
-    
     @Benchmark
     @BenchmarkMode({Mode.SingleShotTime})
     public boolean oneSqlStatementMultipleNotify(Blackhole bh, NotifyScatterUpdateState nsus) {
@@ -223,9 +234,8 @@ public class Perftests {
             crudClient.executeStatement(UPDATE_TEXT);
             bh.consume(listenNotifyClient.nextText(nsus.noIterations));
             return true;
-        } catch(SQLException sqle) {
+        } catch (SQLException sqle) {
             throw new RuntimeException(sqle);
         }
     }
 }
- 
