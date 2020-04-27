@@ -135,7 +135,7 @@ CREATE TRIGGER check_delete_text
     EXECUTE PROCEDURE queue_event();
 
 CREATE TRIGGER check_delete_bin
-    AFTER UPDATE ON bin
+    AFTER DELETE ON bin
     EXECUTE PROCEDURE queue_event_bin();
 ```
 #### 4. Run Performance Tests 
