@@ -28,14 +28,14 @@ Once in the container's terminal, execute:
 In the SQL shell, execute:
  
 ```sql
-CREATE TABLE text
+CREATE TABLE IF NOT EXISTS text
 (
     id integer NOT NULL,
     value character varying(524288),
     CONSTRAINT id_primary PRIMARY KEY (id)
 );
 
-CREATE TABLE bin
+CREATE TABLE IF NOT EXISTS bin
 (
     id integer NOT NULL,
     value bytea NOT NULL,
