@@ -67,10 +67,10 @@ END IF;
 notification = json_build_object(
 'table',TG_TABLE_NAME,
 'action', TG_OP,
-'data', data);
+'data', SUBSTRING(data, 1, 7500));
  
 -- Execute pg_notify(channel, notification)
-PERFORM pg_notify('q_event',SUBSTRING(notification::text, 1, 7500));
+PERFORM pg_notify('q_event', notification::text);
  
 -- Result is ignored since this is an AFTER trigger
 RETURN NULL;
@@ -104,10 +104,10 @@ END IF;
 notification = json_build_object(
 'table',TG_TABLE_NAME,
 'action', TG_OP,
-'data', data);
+'data', SUBSTRING(data, 1, 7500));
  
 -- Execute pg_notify(channel, notification)
-PERFORM pg_notify('q_event_bin',SUBSTRING(notification::text, 1, 7500));
+PERFORM pg_notify('q_event_bin', notification::text);
  
 -- Result is ignored since this is an AFTER trigger
 RETURN NULL;
