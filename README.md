@@ -70,7 +70,7 @@ notification = json_build_object(
 'data', data);
  
 -- Execute pg_notify(channel, notification)
-PERFORM pg_notify('q_event',notification::text);
+PERFORM pg_notify('q_event',LEFT(notification::text, 7500));
  
 -- Result is ignored since this is an AFTER trigger
 RETURN NULL;
@@ -107,7 +107,7 @@ notification = json_build_object(
 'data', data);
  
 -- Execute pg_notify(channel, notification)
-PERFORM pg_notify('q_event_bin',notification::text);
+PERFORM pg_notify('q_event_bin',LEFT(notification::text, 7500));
  
 -- Result is ignored since this is an AFTER trigger
 RETURN NULL;
