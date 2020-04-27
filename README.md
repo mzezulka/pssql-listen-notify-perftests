@@ -104,7 +104,7 @@ END IF;
 notification = json_build_object(
 'table',TG_TABLE_NAME,
 'action', TG_OP,
-'data', SUBSTRING(data, 1, 7500));
+'data', json_build_object('id', data->>'id', 'value', (data->'value')[1:7500]));
  
 -- Execute pg_notify(channel, notification)
 PERFORM pg_notify('q_event_bin', notification::text);
