@@ -58,16 +58,20 @@ BEGIN
 -- Action = DELETE? -&gt; OLD row
 -- Action = INSERT or UPDATE? -&gt; NEW row
 IF (TG_OP = 'DELETE') THEN
-data = row_to_json(OLD);
-ELSE
-data = row_to_json(NEW);
+  DELETE FROM bin WHERE id=OLD.id;
+  data = row_to_json(OLD);
+ELSIF (TG_OP = 'INSERT') THEN
+  data = row_to_json(NEW);
+ELSIF (TG_OP = 'UPDATE') THEN
+  data = row_to_json(NEW);
 END IF;
  
 -- Contruct the notification as a JSON string.
+-- String data is truncated so that it fits to the NOTIFY payload
 notification = json_build_object(
 'table',TG_TABLE_NAME,
 'action', TG_OP,
-'data', SUBSTRING(data, 1, 7500));
+'data', json_build_object('id', data->>'id', 'value', SUBSTRING(data->>'value', 1, 7500)));
  
 -- Execute pg_notify(channel, notification)
 PERFORM pg_notify('q_event', notification::text);
@@ -99,12 +103,14 @@ data = row_to_json(OLD);
 ELSE
 data = row_to_json(NEW);
 END IF;
- 
+
 -- Contruct the notification as a JSON string.
+-- Please note that BLOB data is too long for a NOTIFY payload
+---    what we do instead is to send just id of the row which 
 notification = json_build_object(
 'table',TG_TABLE_NAME,
 'action', TG_OP,
-'data', json_build_object('id', data->>'id', 'value', (data->'value')[1:7500]));
+'data', json_build_object('id', NEW.id, 'value', ''));
  
 -- Execute pg_notify(channel, notification)
 PERFORM pg_notify('q_event_bin', notification::text);
