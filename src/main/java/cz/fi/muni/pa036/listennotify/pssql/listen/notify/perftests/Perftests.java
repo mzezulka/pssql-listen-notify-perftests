@@ -3,12 +3,7 @@ package cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests;
 import cz.fi.muni.pa036.listennotify.api.AbstractListenNotifyClient;
 import cz.fi.muni.pa036.listennotify.api.CrudClient;
 import cz.fi.muni.pa036.listennotify.api.event.EventType;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.sql.SQLException;
-import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -24,19 +19,21 @@ import org.openjdk.jmh.infra.Blackhole;
 
 /**
  *
+ * Tests designed to be run only in a single thread.
+ *
  * @author Miloslav Zezulka
  */
-@State(Scope.Thread)
+@State(Scope.Benchmark)
 public class Perftests {
 
-    private final CrudClient crudClient = CrudClientFactory.client();
-    private final AbstractListenNotifyClient listenNotifyClient = ListenNotifyClientFactory.client();
+    private static final CrudClient crudClient = CrudClientFactory.client();
+    private static final AbstractListenNotifyClient listenNotifyClient = ListenNotifyClientFactory.client();
     private final ExecutorService es = Executors.newSingleThreadExecutor();
 
     private int id = 1;
     private static final String DEFAULT_MESSAGE = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
     private static final String INSERT_TEXT_MESSAGE = "INSERT INTO text VALUES (%d, '%s');";
-    private static final String UPDATE_TEXT = "UPDATE text SET message='changed';";
+    private static final String UPDATE_TEXT = "UPDATE text SET value ='changed';";
 
     @Setup(Level.Trial)
     public void benchmarkSetup() {
@@ -52,10 +49,9 @@ public class Perftests {
         for (EventType e : EventType.values()) {
             crudClient.deregisterEventListener(e);
         }
-        listenNotifyClient.shutdown();
         es.shutdownNow();
     }
-    
+
     @Setup(Level.Iteration)
     public void setup() throws SQLException {
         // clean all data
@@ -63,7 +59,7 @@ public class Perftests {
         crudClient.executeStatement("DELETE FROM text;");
         id = 1;
     }
-    // This benchmark does not use prepared statement, always a fresh one
+    // This benchmark does not use prepared statement, creates always a fresh one
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
     public boolean insertNaive(Blackhole bh) {
@@ -76,7 +72,7 @@ public class Perftests {
         }
     }
 
-    @Benchmark
+    //@Benchmark
     @BenchmarkMode({Mode.AverageTime})
     public boolean insertBasic(Blackhole bh) {
         try {
@@ -102,8 +98,8 @@ public class Perftests {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             InputStream is = classLoader.getResourceAsStream("five_hundred.txt");
             Scanner s = new Scanner(is).useDelimiter("\\A");
-            fileContents = s.hasNext() ? s.next() : "";
-            assert (fileContents.length() == 500);
+            fileContents = s.hasNext() ? s.next().replace("\n", "") : "";
+            assert (fileContents.length() > 300);
         }
     }
 
@@ -132,8 +128,8 @@ public class Perftests {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             InputStream is = classLoader.getResourceAsStream("three_hundred_thousand.txt");
             Scanner s = new Scanner(is).useDelimiter("\\A");
-            fileContents = s.hasNext() ? s.next() : "";
-            assert (fileContents.length() == 300_000);
+            fileContents = s.hasNext() ? s.next().replace("\n", "") : "";
+            assert (fileContents.length() > 300_000);
         }
     }
 
@@ -173,10 +169,11 @@ public class Perftests {
         try {
             // we need to insert text as well since the bin table
             // contains a foreign key (used in later scenarios)
-            crudClient.insertText(id++, DEFAULT_MESSAGE);
+            id++;
+            crudClient.insertText(id, DEFAULT_MESSAGE);
             bh.consume(listenNotifyClient.nextText());
             crudClient.insertBinary(id, is.fis);
-            bh.consume(listenNotifyClient.nextText());
+            bh.consume(listenNotifyClient.nextBinary());
             return true;
         } catch (SQLException sqle) {
             throw new RuntimeException(sqle);
@@ -184,15 +181,16 @@ public class Perftests {
     }
 
     // This scenario measures overhead caused by accepting data from two different channels
-    // (FK constraint in bin has got CASCADE both on UPDATE and DELETE!)
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
     public boolean insertTextAndImageAndDelete(Blackhole bh, ImageState is) {
         try {
-            crudClient.insertText(id++, DEFAULT_MESSAGE);
+            id++;
+            crudClient.insertText(id, DEFAULT_MESSAGE);
             bh.consume(listenNotifyClient.nextText());
             crudClient.insertBinary(id, is.fis);
             bh.consume(listenNotifyClient.nextBinary());
+            
             crudClient.deleteText(id);
             // note that we expect two messages to be reported, one for each table
             bh.consume(listenNotifyClient.nextText());
@@ -207,20 +205,20 @@ public class Perftests {
     public static class NotifyScatterUpdateState {
 
         @Param({"10", "1000"})
-        private int noIterations;
-        // we need to make a fresh copy of the client because crudClient variable
-        // is static and cannot be accessed from a non-static context
-        private final CrudClient c = CrudClientFactory.client();
+        private int numInserts;
 
-        @Setup(Level.Iteration)
+        @Setup(Level.Invocation)
         public void setup() {
-            c.registerEventListener(EventType.UPDATE_TEXT);
-            for (int i = 0; i < noIterations; i++) {
-                try {
-                    c.insertText(i++, DEFAULT_MESSAGE);
-                } catch (SQLException ex) {
-                    throw new RuntimeException(ex);
+            try {
+                if (numInserts <= 10) {
+                    for (int i = 0; i < numInserts; i++) {
+                        crudClient.insertText(i, DEFAULT_MESSAGE);
+                    }
+                } else {
+                    crudClient.insertBulkText();
                 }
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
             }
         }
     }
@@ -232,7 +230,7 @@ public class Perftests {
     public boolean oneSqlStatementMultipleNotify(Blackhole bh, NotifyScatterUpdateState nsus) {
         try {
             crudClient.executeStatement(UPDATE_TEXT);
-            bh.consume(listenNotifyClient.nextText(nsus.noIterations));
+            bh.consume(listenNotifyClient.nextText(nsus.numInserts));
             return true;
         } catch (SQLException sqle) {
             throw new RuntimeException(sqle);
