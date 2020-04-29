@@ -2,14 +2,12 @@ package cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests;
 
 import cz.fi.muni.pa036.listennotify.api.AbstractListenNotifyClient;
 import cz.fi.muni.pa036.listennotify.client.blocking.ListenNotifyClientBlocking;
+import static cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.PropertyHelper.*;
 
 /**
  * @author Miloslav Zezulka
  */
 public class ListenNotifyClientFactory {
-    
-    private static final String CLIENT_PROP_NAME = "cz.fi.muni.pa036.client";
-    private static final String CLIENT_PROP = System.getProperty(CLIENT_PROP_NAME);
     
     static {
         if(CLIENT_PROP == null) {

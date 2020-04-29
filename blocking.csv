@@ -1,3 +1,5 @@
-"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit","Param: numInserts"
-"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.oneSqlStatementMultipleNotify","ss",1,10,0.630855,0.722924,"s/op",10
-"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.oneSqlStatementMultipleNotify","ss",1,10,0.139923,0.478500,"s/op",1000
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit","Param: noProcesses"
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.002094,0.000892,"s/op",2
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.007653,0.009705,"s/op",4
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.006687,0.007274,"s/op",8
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.005510,0.005438,"s/op",32

@@ -24,15 +24,5 @@ for client in $clients ; do
     # Run only singlethreaded perftests
     java -jar -Dcz.fi.muni.pa036.client=$client target/benchmarks.jar \
                                                     $configString \
-                                                    -rff $outputFile \
-                                                    -e "perftests\.MultithreadedPerftests\.*"
-    for noThreads in $threads ; do
-        # redefine file name
-        outputFile=${client}\-multithreaded-${noThreads}threads\.$outputFormatType
-        java -jar -Dcz.fi.muni.pa036.client=$client target/benchmarks.jar \
-                                                        $configString \
-                                                        -t $noThreads \
-                                                        -rff $outputFile \
-                                                        -e "perftests\.Perftests\.*"
-    done
+                                                    -rff $outputFile
 done
