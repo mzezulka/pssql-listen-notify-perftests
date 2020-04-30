@@ -1,4 +1,0 @@
-"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit"
-"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.MultithreadedPerftests.insertBasic","avgt",1,10,0.181079,0.205514,"s/op"
-"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.insertNaive","avgt",1,10,1.771706,2.199154,"s/op"
-"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.insertTextAndImageAndDelete","avgt",1,10,1.599235,0.641414,"s/op"

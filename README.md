@@ -146,3 +146,7 @@ CREATE TRIGGER check_delete_bin
 #### 4. Run Performance Tests 
 
 either `./run.sh` or manually with your own parameters `java -jar -Dcz.fi.muni.pa036.client=<CLIENT> target/benchmarks.jar <JMH_FLAGS>` (CLIENT = [blocking|nonblocking], for JMH_FLAGS, see the shell script)
+
+### 5. Visualize Output CSV Data
+
+`./csv_to_graph.py`

@@ -1,5 +1,13 @@
-"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit","Param: noProcesses"
-"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.002094,0.000892,"s/op",2
-"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.007653,0.009705,"s/op",4
-"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.006687,0.007274,"s/op",8
-"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.005510,0.005438,"s/op",32
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit","Param: noProcesses","Param: numInserts"
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.insertBasic","avgt",1,10,0.017595,0.024237,"s/op",,
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.insertHundredsOfChars","avgt",1,10,0.032781,0.050312,"s/op",,
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.insertHundredsOfThousandsOfChars","avgt",1,10,0.026811,0.002904,"s/op",,
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.insertNaive","avgt",1,10,0.058063,0.116273,"s/op",,
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.insertTextAndImage","avgt",1,10,0.048925,0.083084,"s/op",,
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.insertTextAndImageAndDelete","avgt",1,10,0.145232,0.258069,"s/op",,
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.009322,0.017258,"s/op",2,
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.021383,0.070941,"s/op",4,
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.003234,0.003475,"s/op",8,
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.multipleListeners","avgt",1,10,0.003916,0.002674,"s/op",32,
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.oneSqlStatementMultipleNotify","ss",1,10,0.003457,0.002087,"s/op",,10
+"cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.Perftests.oneSqlStatementMultipleNotify","ss",1,10,0.045072,0.006503,"s/op",,1000
