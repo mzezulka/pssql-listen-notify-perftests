@@ -3,10 +3,6 @@ set -eux
 
 clients=blocking
 threads="2 4 8 32"
-
-mvn clean install
-
-
 noJvmForks=1
 noRealIterations=10
 noWarmupIterations=5
