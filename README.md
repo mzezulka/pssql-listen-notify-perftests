@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS bin
     id integer NOT NULL,
     value bytea NOT NULL,
     CONSTRAINT binary_pkey PRIMARY KEY (id),
-    CONSTRAINT text_id FOREIGN KEY (id)
+    CONSTRAINT fk_id FOREIGN KEY (id),
     REFERENCES text (id) MATCH SIMPLE
         ON UPDATE CASCADE
         ON DELETE CASCADE
@@ -58,7 +58,6 @@ BEGIN
 -- Action = DELETE? -&gt; OLD row
 -- Action = INSERT or UPDATE? -&gt; NEW row
 IF (TG_OP = 'DELETE') THEN
-  DELETE FROM bin WHERE id=OLD.id;
   data = row_to_json(OLD);
 ELSIF (TG_OP = 'INSERT') THEN
   data = row_to_json(NEW);
