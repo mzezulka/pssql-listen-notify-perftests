@@ -12,6 +12,9 @@ public class ClientProcess {
         ccj.registerEventListener(EventType.INSERT_TEXT);
         lncb.setCrudClient(ccj);
         Executors.newSingleThreadExecutor().execute(lncb);
-        while(true) lncb.nextText();
+        while(true) {
+            lncb.nextText();
+            System.out.println(1);
+        }
     }  
 }

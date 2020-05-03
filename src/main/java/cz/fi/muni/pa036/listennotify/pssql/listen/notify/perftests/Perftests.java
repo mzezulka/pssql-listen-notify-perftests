@@ -73,10 +73,10 @@ public class Perftests {
     // This benchmark does not use prepared statement, creates always a fresh one
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
-    public boolean insertNaive(Blackhole bh) {
+    public boolean insertNaive() {
         try {
             crudClient.executeStatement(String.format(INSERT_TEXT_MESSAGE, id++, DEFAULT_MESSAGE));
-            bh.consume(listenNotifyClient.nextText());
+            listenNotifyClient.nextText();
             return true;
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
@@ -85,10 +85,10 @@ public class Perftests {
 
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
-    public boolean insertBasic(Blackhole bh) {
+    public boolean insertBasic() {
         try {
             crudClient.insertText(id++, DEFAULT_MESSAGE);
-            bh.consume(listenNotifyClient.nextText());
+            listenNotifyClient.nextText();
             return true;
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
@@ -116,10 +116,10 @@ public class Perftests {
 
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
-    public boolean insertHundredsOfChars(Blackhole bh, HundredCharsState hcs) {
+    public boolean insertHundredsOfChars(HundredCharsState hcs) {
         try {
             crudClient.insertText(id++, hcs.fileContents);
-            bh.consume(listenNotifyClient.nextText());
+            listenNotifyClient.nextText();
             return true;
         } catch (SQLException sqle) {
             throw new RuntimeException(sqle);
@@ -146,10 +146,10 @@ public class Perftests {
 
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
-    public boolean insertHundredsOfThousandsOfChars(Blackhole bh, HundredsOfThousandsCharsState hcs) {
+    public boolean insertHundredsOfThousandsOfChars(HundredsOfThousandsCharsState hcs) {
         try {
             crudClient.insertText(id++, hcs.fileContents);
-            bh.consume(listenNotifyClient.nextText());
+            listenNotifyClient.nextText();
             return true;
         } catch (SQLException sqle) {
             throw new RuntimeException(sqle);
@@ -176,15 +176,15 @@ public class Perftests {
 
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
-    public boolean insertTextAndImage(Blackhole bh, ImageState is) {
+    public boolean insertTextAndImage(ImageState is) {
         try {
             // we need to insert text as well since the bin table
             // contains a foreign key (used in later scenarios)
             id++;
             crudClient.insertText(id, DEFAULT_MESSAGE);
-            bh.consume(listenNotifyClient.nextText());
+            listenNotifyClient.nextText();
             crudClient.insertBinary(id, is.fis);
-            bh.consume(listenNotifyClient.nextBinary());
+            listenNotifyClient.nextBinary();
             return true;
         } catch (SQLException sqle) {
             throw new RuntimeException(sqle);
@@ -194,18 +194,18 @@ public class Perftests {
     // This scenario measures overhead caused by accepting data from two different channels
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
-    public boolean insertTextAndImageAndDelete(Blackhole bh, ImageState is) {
+    public boolean insertTextAndImageAndDelete(ImageState is) {
         try {
             id++;
             crudClient.insertText(id, DEFAULT_MESSAGE);
-            bh.consume(listenNotifyClient.nextText());
+            listenNotifyClient.nextText();
             crudClient.insertBinary(id, is.fis);
-            bh.consume(listenNotifyClient.nextBinary());
+            listenNotifyClient.nextBinary();
 
             crudClient.deleteText(id);
             // note that we expect two messages to be reported, one for each table
-            bh.consume(listenNotifyClient.nextText());
-            bh.consume(listenNotifyClient.nextBinary());
+            listenNotifyClient.nextText();
+            listenNotifyClient.nextBinary();
             return true;
         } catch (SQLException sqle) {
             throw new RuntimeException(sqle);
@@ -278,9 +278,16 @@ public class Perftests {
 
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
-    public boolean multipleListeners(Blackhole bh, MultiprocessState mps) throws IOException {
+    public boolean multipleListeners(MultiprocessState mps) throws IOException {
         try {
             crudClient.insertText(id++, DEFAULT_MESSAGE);
+            mps.listeners.forEach(p -> {
+                try {
+                    p.getInputStream().read();
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
             return true;
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
