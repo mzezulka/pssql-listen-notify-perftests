@@ -25,8 +25,6 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.infra.Blackhole;
 import static cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.PropertyHelper.*;
 import java.util.ArrayList;
-import java.util.logging.Logger;
-
 /**
  *
  * Tests designed to be run only in a single thread.
