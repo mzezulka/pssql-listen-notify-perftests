@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eux
 
-clients=blocking
+clients="blocking nonblocking"
 threads="2 4 8 32"
 noJvmForks=1
 noRealIterations=10

@@ -2,6 +2,8 @@ package cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests;
 
 import cz.fi.muni.pa036.listennotify.api.CrudClient;
 import cz.fi.muni.pa036.listennotify.client.blocking.CrudClientJdbc;
+import cz.fi.muni.pa036.listennotify.client.ng.CrudClientJdbcNg;
+
 import static cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.PropertyHelper.*;
 
 class CrudClientFactory {
@@ -15,6 +17,7 @@ class CrudClientFactory {
     public static CrudClient client() {
         switch (CLIENT_PROP) {
             case "nonblocking":
+            	return new CrudClientJdbcNg();
             case "blocking":
                 return new CrudClientJdbc();
             default:

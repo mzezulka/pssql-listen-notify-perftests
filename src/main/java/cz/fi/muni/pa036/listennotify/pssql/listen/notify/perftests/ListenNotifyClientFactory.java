@@ -2,6 +2,8 @@ package cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests;
 
 import cz.fi.muni.pa036.listennotify.api.AbstractListenNotifyClient;
 import cz.fi.muni.pa036.listennotify.client.blocking.ListenNotifyClientBlocking;
+import cz.fi.muni.pa036.listennotify.client.ng.ListenNotifyClientNg;
+
 import static cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.PropertyHelper.*;
 
 /**
@@ -17,7 +19,7 @@ public class ListenNotifyClientFactory {
     
     public static AbstractListenNotifyClient client() {
         switch(CLIENT_PROP) {
-            case "nonblocking" : 
+            case "nonblocking" : return new ListenNotifyClientNg();
             case "blocking" : return new ListenNotifyClientBlocking();
             default: throw new IllegalArgumentException(String.format("Invalid value '%s' for property '%s'", 
                     CLIENT_PROP, CLIENT_PROP_NAME));
