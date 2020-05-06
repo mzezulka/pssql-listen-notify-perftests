@@ -27,6 +27,21 @@ for f in sys.argv[1:]:
     fig.add_trace(go.Bar(x=x, y=y, text=params, textposition='auto',
     #            marker_color='crimson',
                 name=f.split(".")[0]))
-
-fig.update_layout(barmode='stack', xaxis={'categoryorder':'total descending'})
+fig.update_layout(
+    legend=dict(
+        x=0,
+        y=1,
+        traceorder="normal",
+        font=dict(
+            family="sans-serif",
+            size=12,
+            color="black"
+        ),
+        bgcolor="LightSteelBlue",
+        bordercolor="Black",
+        borderwidth=2
+    )
+)
+fig.update_layout(width=1300, legend=dict(x=.89, y=1), xaxis={'categoryorder':'total descending'}, xaxis_title="Performance Test name", xaxis_title_font_size=16, yaxis_title="Average Seconds per Operation", yaxis_title_font_size=16)
+fig.update_yaxes(type="log")
 fig.show()

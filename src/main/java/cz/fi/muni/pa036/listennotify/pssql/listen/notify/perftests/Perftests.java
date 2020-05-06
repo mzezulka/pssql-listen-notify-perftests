@@ -7,12 +7,15 @@ import java.io.File;
 import java.util.List;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -25,6 +28,7 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.infra.Blackhole;
 import static cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.PropertyHelper.*;
 import java.util.ArrayList;
+
 /**
  *
  * Tests designed to be run only in a single thread.
@@ -34,41 +38,41 @@ import java.util.ArrayList;
 @State(Scope.Benchmark)
 public class Perftests {
 
-    private static final CrudClient crudClient = CrudClientFactory.client();
-    private static final AbstractListenNotifyClient listenNotifyClient = ListenNotifyClientFactory.client();
-    private final ExecutorService es = Executors.newSingleThreadExecutor();
+	private static final CrudClient crudClient = CrudClientFactory.client();
+	private static final AbstractListenNotifyClient listenNotifyClient = ListenNotifyClientFactory.client();
+	private final ExecutorService es = Executors.newSingleThreadExecutor();
 
-    private int id = 1;
-    private static final String DEFAULT_MESSAGE = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
-    private static final String INSERT_TEXT_MESSAGE = "INSERT INTO text VALUES (%d, '%s');";
-    private static final String UPDATE_TEXT = "UPDATE text SET value ='changed';";
+	private int id = 1;
+	private static final String DEFAULT_MESSAGE = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+	private static final String INSERT_TEXT_MESSAGE = "INSERT INTO text VALUES (%d, '%s');";
+	private static final String UPDATE_TEXT = "UPDATE text SET value ='changed';";
 
-    @Setup(Level.Trial)
-    public void benchmarkSetup() {
-        for (EventType e : EventType.values()) {
-            crudClient.registerEventListener(e);
-        }
-        listenNotifyClient.setCrudClient(crudClient);
-        es.execute(listenNotifyClient);
-    }
+	@Setup(Level.Trial)
+	public void benchmarkSetup() {
+		for (EventType e : EventType.values()) {
+			crudClient.registerEventListener(e);
+		}
+		listenNotifyClient.setCrudClient(crudClient);
+		es.execute(listenNotifyClient);
+	}
 
-    @TearDown(Level.Trial)
-    public void perIterationSetup() {
-        for (EventType e : EventType.values()) {
-            crudClient.deregisterEventListener(e);
-        }
-        es.shutdownNow();
-    }
+	@TearDown(Level.Trial)
+	public void perIterationSetup() {
+		for (EventType e : EventType.values()) {
+			crudClient.deregisterEventListener(e);
+		}
+		es.shutdownNow();
+	}
 
-    @Setup(Level.Iteration)
-    public void setup() throws SQLException {
-        // clean all data
-        crudClient.executeStatement("DELETE FROM bin;");
-        crudClient.executeStatement("DELETE FROM text;");
-        id = 1;
-    }
+	@Setup(Level.Iteration)
+	public void setup() throws SQLException {
+		// clean all data
+		crudClient.executeStatement("DELETE FROM bin;");
+		crudClient.executeStatement("DELETE FROM text;");
+		id = 1;
+	}
 
-    // This benchmark does not use prepared statement, creates always a fresh one
+	// This benchmark does not use prepared statement, creates always a fresh one
     @Benchmark
     @BenchmarkMode({Mode.AverageTime})
     public boolean insertNaive() {
@@ -246,49 +250,57 @@ public class Perftests {
         }
     }
 
-    @State(Scope.Benchmark)
-    public static class MultiprocessState {
+	@State(Scope.Benchmark)
+	public static class MultiprocessState {
 
-        @Param({"2", "4", "8", "32"})
-        private int noProcesses;
+		@Param({ "2", "4", "8", "32" })
+		private int noProcesses;
 
-        private List<Process> listeners = new ArrayList<>();
+		private List<Process> listeners = new ArrayList<>();
+		private FileInputStream fis;
+		private File tmp = new File("/tmp/listen-notify-buffer.tmp");
 
-        @Setup(Level.Trial)
-        public void setup() {
-            listeners.clear();
-            // Spawn n new processes, each representing new client
-            for (int i = 0; i < noProcesses; i++) {
-                try {
-                    listeners.add(Runtime.getRuntime()
-                            .exec(String.format("java -Dcz.fi.muni.pa036.client=%s -cp target/benchmarks.jar cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.ClientProcess ", CLIENT_PROP)));
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-        }
-        
-        @TearDown(Level.Trial)
-        public void teardown() {
-            listeners.forEach(p -> p.destroy());
-        }
-    }
+		@Setup(Level.Trial)
+		public void setup() {
+			listeners.clear();
+			// Spawn n new processes, each representing new client
+			try {
+				tmp.createNewFile();
+				tmp.deleteOnExit();
+				fis = new FileInputStream(tmp);
+				for (int i = 0; i < noProcesses; i++) {
 
-    @Benchmark
-    @BenchmarkMode({Mode.AverageTime})
-    public boolean multipleListeners(MultiprocessState mps) throws IOException {
-        try {
-            crudClient.insertText(id++, DEFAULT_MESSAGE);
-            mps.listeners.forEach(p -> {
-                try {
-                    p.getInputStream().read();
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-            });
-            return true;
-        } catch (SQLException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
+					listeners.add(Runtime.getRuntime().exec(String.format(
+							"java -Dcz.fi.muni.pa036.client=%s -cp target/benchmarks.jar cz.fi.muni.pa036.listennotify.pssql.listen.notify.perftests.ClientProcess ",
+							CLIENT_PROP)));
+
+				}
+			} catch (IOException ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+
+		@TearDown(Level.Trial)
+		public void teardown() {
+			listeners.forEach(p -> p.destroy());
+		}
+	}
+
+	@Benchmark
+	@BenchmarkMode({ Mode.AverageTime })
+	public boolean multipleListeners(MultiprocessState mps) throws IOException {
+		try {
+			crudClient.insertText(id++, DEFAULT_MESSAGE);
+			mps.listeners.forEach(p -> {
+				try {
+					mps.fis.read();
+				} catch (IOException ex) {
+					throw new RuntimeException(ex);
+				}
+			});
+			return true;
+		} catch (SQLException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
 }
