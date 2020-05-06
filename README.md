@@ -12,6 +12,8 @@ Make sure you have both PSSQL Java clients ([blocking](https://github.com/zezulk
 
 #### 2. Database Start
 
+Make sure you have added at least one PostgreSQL server to which you can add all the tables, triggers etc.
+
 `sudo systemctl start docker && sudo docker run -d --rm --name postgresql -v postgresql-data:/var/lib/postgresql/data --network host -e POSTGRES_PASSWORD="" -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 postgres:latest`
 
 #### 3. Database Setup
@@ -28,16 +30,37 @@ Once in the container's terminal, execute:
 In the SQL shell, execute:
  
 ```sql
+-- first of all, create sequences for ID generation
+CREATE SEQUENCE public.bin_id_seq
+    INCREMENT 1
+    START 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    CACHE 1;
+
+ALTER SEQUENCE public.bin_id_seq
+    OWNER TO postgres;
+
+CREATE SEQUENCE public.text_id_seq
+    INCREMENT 1
+    START 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    CACHE 1;
+
+ALTER SEQUENCE public.text_id_seq
+    OWNER TO postgres;
+
 CREATE TABLE IF NOT EXISTS text
 (
-    id integer NOT NULL,
+    id integer NOT NULL DEFAULT nextval('text_id_seq'::regclass),
     value character varying(524288),
     CONSTRAINT id_primary PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS bin
 (
-    id integer NOT NULL,
+    id integer NOT NULL DEFAULT nextval('bin_id_seq'::regclass),
     value bytea NOT NULL,
     CONSTRAINT binary_pkey PRIMARY KEY (id),
     CONSTRAINT fk_id FOREIGN KEY (id)
