@@ -42,6 +42,6 @@ fig.update_layout(
         borderwidth=2
     )
 )
-fig.update_layout(width=1300, legend=dict(x=.89, y=1), xaxis={'categoryorder':'total descending'}, xaxis_title="Performance Test name", xaxis_title_font_size=16, yaxis_title="Average Seconds per Operation", yaxis_title_font_size=16)
+fig.update_layout(width=1300, legend=dict(x=.84, y=1), xaxis={'categoryorder':'total descending'}, xaxis_title="Performance Test name", xaxis_title_font_size=16, yaxis_title="Average Seconds per Operation", yaxis_title_font_size=16)
 fig.update_yaxes(type="log")
 fig.show()
